@@ -57,24 +57,28 @@ This flow dynamically adjusts the battery charge current based on real-time volt
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/qilowatt/node-red-hass.git
-2. **Import the Flow**:
+2. **Get MQTT Credentials from Qilowatt**:
+   - Contact Qilowatt support to obtain your MQTT username and password.
+   - Register your device with Qilowatt to get a unique device ID. This ID will be used in the MQTT topics for communication with Qilowatt. Replace the placeholder device ID in the flow with your own.
+
+3. **Import the Flow**:
    - Open Node-RED.
    - Click on the menu and select “Import”.
    - Paste the JSON content from the provided flow file (`qilowatt_node_red_flow.json`).
    - Deploy the flow.
 
-3. **Configure MQTT Broker**:
-   - Set up your MQTT broker details in the `mqtt-broker` node.
+4. **Configure MQTT Broker**:
+   - Set up your MQTT broker details, including the username and password provided by Qilowatt, in the `mqtt-broker` node.
    - Ensure Home Assistant is configured correctly with the necessary entities for data retrieval.
 
-4. **Customize for Your Setup**:
+5. **Customize for Your Setup**:
    - If you’re using a different inverter or have a different Home Assistant setup, modify the entity IDs in the flow to match your system.
 
 ### Usage
 
 - The flow will automatically start fetching data from Home Assistant and sending it to Qilowatt once deployed.
 - Use the inject nodes to test various Fusebox and Timer WORKMODE scenarios.
-- The system will respond to WORKMODE commands sent via the `Q/c4ea0c75-c784-4184-9752-6b772e709d4c/cmnd/backlog` topic.
+- The system will respond to WORKMODE commands sent via the `Q/<your-device-id>/cmnd/backlog` topic.
 
 ### Known Limitations
 
