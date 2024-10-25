@@ -214,12 +214,21 @@ This flow dynamically adjusts the battery charge current based on real-time volt
 | UptimeSec             | Integer    | The system uptime in seconds                                          | 13739                            | Required               |
 
 #### **Q/<serial_number>/CMND/BACKLOG JSON Object Explanation
+
+This is the topic where Qilowatt sends you commands. The _source field in the command indicates whether the command is from usual Qilowatt management (timer) or from Fusebox signals. 
+
+	•	Fusebox Commands: The system will only act on commands originating from Fusebox. These commands control when the inverter should buy or sell power based on grid frequency restoration signals.
+	•	Timer Commands: The Qilowatt timer management commands are ignored because the inverter and battery are managed independently by the user. When a timer command is received, the system will switch back to EMHASS for energy optimization management.
+
+Note: Fusebox commands usually conclude with a timer command, which is a good opportunity to switch back to your own management system after Fusebox operations are completed.
+
 **Example:**
 ```json
 {
   "backlog": {
     "WORKMODE": {
       "Mode": "buy",
+      "_source":"fusebox"
       "BatterySoc": 100,
       "PowerLimit": 3000,
       "PeakShaving": 0,
@@ -239,6 +248,8 @@ This flow dynamically adjusts the battery charge current based on real-time volt
 |                       |            | **nobattery**: Operates without battery support                       |                                  |                        |
 |                       |            | **limitexport**: Limits the amount of power exported to the grid      |                                  |                        |
 |                       |            | **normal**: Standard operating mode without specific grid buy/export restrictions |                           |                        |
+| _source               | string     | **fusebox**: Fusebox command                                       | "fusebox"                        |                         |
+|                       |            | **timer**: Qilowatt Timer management                                   |                                 |
 | BatterySoc            | Integer    | The state of charge of the battery, represented as a percentage. Range: 0-100 | 100                       | Required               |
 | PowerLimit            | Integer    | Power limit in watts. It can limit grid buy power or export power     | 3000                             | Required               |
 | PeakShaving           | Integer    | Integer value for peak shaving to reduce peak power consumption       | 0                                | Required               |
@@ -246,6 +257,9 @@ This flow dynamically adjusts the battery charge current based on real-time volt
 | DischargeCurrent      | Integer    | Maximum current allowed for discharging the battery, in amperes       | 185                              | Required               |
 
 #### **Q/<serial_number>/CMND/STATUS0 JSON Object Explanation
+
+
+
 **Example:**
 ```json
 {
