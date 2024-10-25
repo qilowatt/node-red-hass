@@ -1,0 +1,783 @@
+[
+    {
+        "id": "50be82b0b86efe94",
+        "type": "tab",
+        "label": "Qilowatt",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "cf24cb2be9bf2044",
+        "type": "mqtt out",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "topic": "Q/c4ea0c75-c784-4184-9752-6b772e709d4c/SENSOR",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "0036c37448e3a8e1",
+        "x": 1030,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "2c7cc550a9d54363",
+        "type": "ha-get-entities",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "server": "85d8301ca60baff3",
+        "version": 1,
+        "rules": [
+            {
+                "property": "entity_id",
+                "logic": "includes",
+                "value": "sensor.ss_load_l1_power_workaround, sensor.ss_load_l2_power_workaround, sensor.ss_load_l3_power_workaround, sensor.ss_day_grid_import, sensor.ss_total_grid_import, sensor.ss_grid_l1_current, sensor.ss_grid_l2_current, sensor.ss_grid_l3_current, sensor.ss_grid_l1_voltage, sensor.ss_grid_l2_voltage, sensor.ss_grid_l3_voltage, sensor.ss_grid_frequency, sensor.ss_battery_soc, sensor.ss_battery_power, sensor.ss_battery_voltage, sensor.ss_battery_current, sensor.ss_battery_temperature, sensor.ss_radiator_temperature, select.ss_grid_peak_shaving, number.ss_export_limit_power, number.ss_battery_max_charge_current, number.ss_battery_max_discharge_current, number.ss_grid_peak_shaving_power, sensor.ss_pv1_power, sensor.ss_pv2_power, sensor.ss_grid_l1_power, sensor.ss_grid_l2_power, sensor.ss_grid_l3_power, sensor.ss_pv1_voltage, sensor.ss_pv2_voltage, sensor.ss_pv1_current, sensor.ss_pv2_current, number.ss_prog1_capacity, number.ss_prog1_power",
+                "valueType": "str"
+            }
+        ],
+        "outputType": "array",
+        "outputEmptyResults": false,
+        "outputLocationType": "msg",
+        "outputLocation": "payload",
+        "outputResultsCount": 1,
+        "x": 370,
+        "y": 640,
+        "wires": [
+            [
+                "2cf12d149308e760"
+            ]
+        ]
+    },
+    {
+        "id": "2cf12d149308e760",
+        "type": "function",
+        "z": "50be82b0b86efe94",
+        "name": "MQTT Payload",
+        "func": "// Initialize an empty object to store entity states\nlet entityStates = {};\n\n// Loop through the array and map entity_id to its state\nmsg.payload.forEach(entity => {\n    entityStates[entity.entity_id] = entity.state;\n});\n\n// Retrieve the stored WORKMODE from flow context\nlet storedWorkmode = flow.get(\"storedWorkmode\") || {};\n\n// Retrieve the stored WORKMODE from flow context\nlet pingData = flow.get(\"pingData\") || {};\n\n\n// Now build the MQTT payload using the mapped entity states, pingData, and stored WORKMODE\nmsg.topic = \"Q/d864cb1b-e917-4c66-9ce9-0c801388b594/SENSOR\";\nmsg.payload = {\n    \"PING\": {\n        \"Reachable\": pingData.Reachable,\n        \"Success\": pingData.Success,\n        \"Timeout\": pingData.Timeout,\n        \"MinTime\": pingData.MinTime || 0,\n        \"MaxTime\": pingData.MaxTime || 0,\n        \"AvgTime\": pingData.AvgTime || 0\n    },\n    \"Time\": (new Date()).toISOString(),\n    \"ESP32\": { \"Temperature\": 40 },\n    \"ENERGY\": {\n        \"Power\": [\n            parseFloat(entityStates[\"sensor.ss_grid_l1_power\"]),\n            parseFloat(entityStates[\"sensor.ss_grid_l2_power\"]),\n            parseFloat(entityStates[\"sensor.ss_grid_l3_power\"])\n        ],\n        \"Current\": [\n            parseFloat(entityStates[\"sensor.ss_grid_l1_current\"]),\n            parseFloat(entityStates[\"sensor.ss_grid_l2_current\"]),\n            parseFloat(entityStates[\"sensor.ss_grid_l3_current\"])\n        ],\n        \"Voltage\": [\n            parseFloat(entityStates[\"sensor.ss_grid_l1_voltage\"]),\n            parseFloat(entityStates[\"sensor.ss_grid_l2_voltage\"]),\n            parseFloat(entityStates[\"sensor.ss_grid_l3_voltage\"])\n        ],\n        \"Frequency\": parseFloat(entityStates[\"sensor.ss_grid_frequency\"])\n    },\n    \"METRICS\": {\n        \"PvPower\": [\n            parseFloat(entityStates[\"sensor.ss_pv1_power\"]),\n            parseFloat(entityStates[\"sensor.ss_pv2_power\"])\n        ],\n        \"PvVoltage\": [\n            parseFloat(entityStates[\"sensor.ss_pv1_voltage\"]),\n            parseFloat(entityStates[\"sensor.ss_pv2_voltage\"])\n        ],\n        \"PvCurrent\": [\n            parseFloat(entityStates[\"sensor.ss_pv1_current\"]),\n            parseFloat(entityStates[\"sensor.ss_pv2_current\"])\n        ],\n        \"LoadPower\": [\n            parseFloat(entityStates[\"sensor.ss_load_l1_power_workaround\"]),\n            parseFloat(entityStates[\"sensor.ss_load_l2_power_workaround\"]),\n            parseFloat(entityStates[\"sensor.ss_load_l3_power_workaround\"])\n        ],\n        \"AlarmCodes\": [0, 0, 0, 0, 0, 0],\n        \"BatterySOC\": parseInt(entityStates[\"sensor.ss_battery_soc\"]),\n        \"LoadCurrent\": [\n            parseFloat(entityStates[\"sensor.ss_grid_l1_current\"]),\n            parseFloat(entityStates[\"sensor.ss_grid_l2_current\"]),\n            parseFloat(entityStates[\"sensor.ss_grid_l3_current\"])\n        ],\n        \"BatteryPower\": [parseFloat(entityStates[\"sensor.ss_battery_power\"])],\n        \"BatteryCurrent\": [parseFloat(entityStates[\"sensor.ss_battery_current\"])],\n        \"BatteryVoltage\": [parseFloat(entityStates[\"sensor.ss_battery_voltage\"])],\n        \"InverterStatus\": 2,\n        \"GridExportLimit\": parseFloat(entityStates[\"number.ss_export_limit_power\"]),\n        \"BatteryTemperature\": [parseFloat(entityStates[\"sensor.ss_battery_temperature\"])],\n        \"InverterTemperature\": parseFloat(entityStates[\"sensor.ss_radiator_temperature\"])\n    },\n    \"VERSION\": {\n        \"api\": 1.0\n    },\n    \"WORKMODE\": {\n        \"Mode\": storedWorkmode.Mode,\n        \"_source\": storedWorkmode._source,\n        \"BatterySoc\": parseInt(storedWorkmode.BatterySoc || entityStates[\"number.ss_prog1_capacity\"]),\n        \"PowerLimit\": parseFloat(storedWorkmode.PowerLimit || entityStates[\"number.ss_prog1_power\"]),\n        \"PeakShaving\": parseFloat(storedWorkmode.PeakShaving || (entityStates[\"select.ss_grid_peak_shaving\"] === \"Disable\" ? 0 : entityStates[\"number.ss_grid_peak_shaving_power\"])),\n        \"ChargeCurrent\": parseFloat(storedWorkmode.ChargeCurrent || entityStates[\"number.ss_battery_max_charge_current\"]),\n        \"DischargeCurrent\": parseFloat(storedWorkmode.DischargeCurrent || entityStates[\"number.ss_battery_max_discharge_current\"])\n    }\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 640,
+        "wires": [
+            [
+                "cf24cb2be9bf2044"
+            ]
+        ],
+        "info": "Description:\n\nThis function node is responsible for writing back to the Qilowatt MQTT topic Q/c4ea0c75-c784-4184-9752-6b772e709d4c/SENSOR. The goal is to acknowledge the received WORKMODE commands (whether from timer mode or fusebox mode) and provide the current system state (battery, grid, and inverter metrics) based on the real-time values from Home Assistant.\n\nKey Functionality:\n\n\t1.\tEntity State Mapping:\n\t•\tThe function retrieves the latest states from Home Assistant entities. These entities provide information about various metrics such as grid power, battery SOC (State of Charge), current, voltage, power limits, and more.\n\t•\tThe entityStates object maps the entity_id to its corresponding state value for easier reference later in the function.\n\t2.\tRetrieving Stored WORKMODE:\n\t•\tThe function checks if there is any stored WORKMODE from the timer function in the flow context. If WORKMODE is found, it uses its values.\n\t•\tIf WORKMODE is not available (typically in fusebox mode where real-time values are needed), the function pulls the real values from Home Assistant entity states to fill in the response.\n\t3.\tBuilding the MQTT Payload:\n\t•\tThe function constructs a payload that mimics a device’s sensor data, including:\n\t•\tPING: Reports device reachability.\n\t•\tTime: Current timestamp (ISO format).\n\t•\tENERGY and METRICS sections: Provide detailed information about the grid, battery, and inverter states, including power, voltage, current, temperature, etc.\n\t•\tVERSION and TempUnit: Contains metadata about the system’s version and temperature unit.\n\t4.\tHandling the WORKMODE Section:\n\t•\tThe WORKMODE section of the payload contains critical parameters such as Mode, _source, BatterySOC, PowerLimit, ChargeCurrent, DischargeCurrent, and PeakShaving.\n\t•\tStored WORKMODE: If a WORKMODE payload was stored (from timer mode), it is used.\n\t•\tReal-Time Values: If the stored WORKMODE is not available (in case of fusebox commands), the real values are fetched from Home Assistant entities and used for BatterySOC, PowerLimit, ChargeCurrent, and DischargeCurrent.\n\t5.\tSending the MQTT Payload:\n\t•\tThe payload is sent back to the Qilowatt MQTT topic Q/c4ea0c75-c784-4184-9752-6b772e709d4c/SENSOR to acknowledge and provide real-time feedback about the system’s state, ensuring that Qilowatt has the latest information about the system’s performance and status.\n\nSummary:\n\n\t•\tStored Timer Mode: If a timer mode command was previously received, this function uses the stored WORKMODE values to build the response.\n\t•\tReal-Time Fusebox Mode: In the absence of stored WORKMODE, it retrieves the real-time states from Home Assistant to populate the payload.\n\t•\tAcknowledgment to Qilowatt: The payload is sent back to Qilowatt as part of the SENSOR topic, confirming that the command has been acknowledged and acted upon, and that the system status is updated.\n\nThis approach ensures seamless integration with Qilowatt, allowing the system to adjust dynamically based on both timer and fusebox commands while providing accurate, real-time system feedback."
+    },
+    {
+        "id": "63dbde5a5a0fb058",
+        "type": "inject",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "10",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 640,
+        "wires": [
+            [
+                "2c7cc550a9d54363"
+            ]
+        ]
+    },
+    {
+        "id": "8cc8f64c1cb47270",
+        "type": "mqtt in",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "topic": "Q/c4ea0c75-c784-4184-9752-6b772e709d4c/cmnd/backlog",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "0036c37448e3a8e1",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 320,
+        "y": 480,
+        "wires": [
+            [
+                "2612e13ca2a0b6bc",
+                "1db7cdacbb013316"
+            ]
+        ]
+    },
+    {
+        "id": "1db7cdacbb013316",
+        "type": "function",
+        "z": "50be82b0b86efe94",
+        "name": "Parse QW WORKMODE",
+        "func": "// Get the WORKMODE part from the incoming MQTT payload\nlet payloadString = msg.payload;\n\n// Extract the WORKMODE part using regex (ignoring any leading data like POWER2 or POWER3)\nlet workmodeMatch = payloadString.match(/WORKMODE\\s+({.*})/);\n\nif (workmodeMatch && workmodeMatch[1]) {\n    // Extract the JSON part of WORKMODE\n    let workmodeString = workmodeMatch[1];\n\n    try {\n        // Parse the WORKMODE JSON string\n        let workmodeObject = JSON.parse(workmodeString);\n\n        // Store the parsed WORKMODE object in the message payload\n        msg.payload = workmodeObject;\n\n        // Return the message to pass it to the switch node\n        return msg;\n    } catch (error) {\n        // Handle any JSON parsing errors\n        node.error(\"Failed to parse WORKMODE JSON: \" + error);\n    }\n} else {\n    node.error(\"WORKMODE not found in the incoming payload\");\n}\n\nreturn null;  // Return null if WORKMODE is not found or there's an error",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 910,
+        "y": 480,
+        "wires": [
+            [
+                "dd67d017aa44fdd6"
+            ]
+        ]
+    },
+    {
+        "id": "dd67d017aa44fdd6",
+        "type": "switch",
+        "z": "50be82b0b86efe94",
+        "name": "Choose timer/fusebox",
+        "property": "payload._source",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "timer",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "fusebox",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1180,
+        "y": 480,
+        "wires": [
+            [
+                "8e09f8bc1f0772f5"
+            ],
+            [
+                "07a0b27b2aed7a7f"
+            ]
+        ]
+    },
+    {
+        "id": "8e09f8bc1f0772f5",
+        "type": "function",
+        "z": "50be82b0b86efe94",
+        "name": "TIMER",
+        "func": "// Store the entire WORKMODE payload in the flow context\nflow.set(\"storedWorkmode\", msg.payload);\n\n// Get the state of the input_select.battery_automation_selector entity\nlet currentBatterySelector = global.get(\"homeassistant\").homeAssistant.states[\"input_select.battery_automation_selector\"].state;\n\n// Check if it's not \"EMHASS\", and if so, change it to \"EMHASS\"\nif (currentBatterySelector !== \"EMHASS\") {\n    \n    // Send a service call to switch the input_select to EMHASS\n    return {\n        payload: {\n            domain: \"input_select\",\n            service: \"select_option\",\n            data: {\n                entity_id: \"input_select.battery_automation_selector\",\n                option: \"EMHASS\"\n            }\n        }    \n    };\n}\n\n// Optionally return the message to pass further\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1430,
+        "y": 440,
+        "wires": [
+            [
+                "6dd7754c920f30f2"
+            ]
+        ],
+        "info": "Description:\n\nThis function node is part of a larger Node-RED flow that acts as a translator between Home Assistant and Qilowatt, a service used to manage and control home inverters, batteries, and participate in the MFFR (manual frequency restoration reserve) market through Fusebox signals. The key difference between the management mode and the Fusebox mode lies in the MQTT command payload received via the Qilowatt topic (Q/c4ea0c75-c784-4184-9752-6b772e709d4c/cmnd/backlog). The mode=timer indicates regular management commands, while mode=fusebox indicates MFFR-related signals.\n\nFunction Purpose:\n\nThis specific function is triggered when the mode=timer command is received. The primary purpose of this function is to switch the battery automation system in Home Assistant to the EMHASS automation (used for energy optimization) when this command is detected. Additionally, the function stores the entire received payload in the Node-RED flow context for later use and acknowledgement.\n\nKey Steps:\n\n\t1.\tStore the WORKMODE Payload:\n\t•\tThe function stores the received WORKMODE payload in the flow context using flow.set(). This allows for easy retrieval later when responding to the command.\n\t2.\tCheck Current Battery Automation Mode:\n\t•\tThe function retrieves the current state of the input_select.battery_automation_selector entity in Home Assistant, which indicates the active automation mode (e.g., EMHASS or another mode).\n\t3.\tSwitch to EMHASS if Necessary:\n\t•\tIf the battery automation is not currently set to EMHASS, the function sends a service call to Home Assistant to switch the input_select.battery_automation_selector to EMHASS.\n\t4.\tReturn null if No Action is Needed:\n\t•\tIf the automation is already set to EMHASS, the function returns null, effectively stopping the flow and ensuring no unnecessary actions are taken.\n\nContext:\n\nThe main objective of this function is to ensure that when regular timer commands (mode=timer) are received, the energy management is optimized by switching to EMHASS. The function stores the payload so it can be sent back to Qilowatt via the SENSOR topic as part of the WORKMODE section, letting Qilowatt know that the command has been acknowledged."
+    },
+    {
+        "id": "52753a6743d41fd2",
+        "type": "inject",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 820,
+        "wires": [
+            [
+                "a45b8203749232e3"
+            ]
+        ]
+    },
+    {
+        "id": "a45b8203749232e3",
+        "type": "function",
+        "z": "50be82b0b86efe94",
+        "name": "function 1",
+        "func": "// Construct the payload as a JSON object\nmsg.payload = {\n    \"Time\": (new Date()).toISOString(), // You can also use a static timestamp if you prefer\n    \"Wifi\": {\n        \"RSSI\": 92,\n        \"SSId\": \"KAPO\",\n        \"BSSId\": \"32:87:BA:D7:89:76\",\n        \"Signal\": -54,\n        \"Channel\": 7,\n    },\n    \"POWER1\": \"OFF\",\n    \"LoadAvg\": 28,\n    \"UptimeSec\": 13799\n};\n\n// Return the message to pass it to the next node\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 820,
+        "wires": [
+            [
+                "a4ff0e7283fc7346"
+            ]
+        ],
+        "info": "Description:\n\nThis function node generates the MQTT payload for the Qilowatt topic Q/c4ea0c75-c784-4184-9752-6b772e709d4c/STATE. The payload contains essential system status data, including WiFi information, power state, load average, and uptime in seconds. The payload is constructed as a JSON object, and the current timestamp is generated dynamically.\n\nKey Functionality:\n\n\t1.\tTimestamp:\n\t•\tThe \"Time\" field is populated with the current timestamp in ISO 8601 format using new Date().toISOString(). This ensures that the time reported in the payload is always accurate to the current moment the function is executed.\n\t2.\tWiFi Information:\n\t•\tThe \"Wifi\" section contains details about the WiFi network connection:\n\t•\tRSSI: The Received Signal Strength Indicator (92 in this example), indicating the strength of the WiFi signal.\n\t•\tSSId: The name of the connected WiFi network (“KAPO”).\n\t•\tBSSId: The MAC address of the access point (“32:87:BA:D7:89:76”).\n\t•\tSignal: The signal strength in dBm (-54 in this example), showing how strong the signal is.\n\t•\tChannel: The WiFi channel currently in use (Channel 7).\n\t3.\tPOWER State:\n\t•\tPOWER1: The state of the first power relay (“OFF” in this example). This could represent whether a device or system controlled by this relay is powered on or off.\n\t4.\tLoad Average:\n\t•\tLoadAvg: Represents the system’s load average (28 in this case), which gives an indication of how busy the system is.\n\t5.\tSystem Uptime:\n\t•\tUptimeSec: The system’s uptime in seconds (13799 seconds in this example), showing how long the system has been running without interruption.\n\t6.\tReturning the Payload:\n\t•\tOnce the JSON object is constructed with all relevant data, it is passed as the msg.payload to the next node in the flow, ready for publication to the MQTT topic.\n\nSummary:\n\n\t•\tReal-Time State Reporting: This function gathers relevant state information, including WiFi stats, power status, load average, and uptime, to construct a JSON object representing the current system status.\n\t•\tMQTT Publishing: The payload is then returned to be published to the Q/c4ea0c75-c784-4184-9752-6b772e709d4c/STATE topic, where Qilowatt can retrieve the latest state of the system.\n\t•\tDynamic Timestamp: The time is always up-to-date, thanks to the dynamic generation of the ISO 8601 timestamp using JavaScript’s Date() object.\n\nThis payload can help Qilowatt monitor the operational state of the system, including network connectivity, power states, and system load, ensuring effective integration and control."
+    },
+    {
+        "id": "a4ff0e7283fc7346",
+        "type": "mqtt out",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "topic": "Q/c4ea0c75-c784-4184-9752-6b772e709d4c/STATE",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "0036c37448e3a8e1",
+        "x": 1020,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "4086f9709e323d0c",
+        "type": "inject",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "3600",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 920,
+        "wires": [
+            [
+                "70b66ab65399227b"
+            ]
+        ]
+    },
+    {
+        "id": "70b66ab65399227b",
+        "type": "function",
+        "z": "50be82b0b86efe94",
+        "name": "function 2",
+        "func": "// Get the current date and time\nlet currentDate = new Date();\n\n// Format UTC time (in ISO string format)\nlet utcTime = currentDate.toISOString();\n\n// Format Local time (in the Tallinn timezone)\nlet localTime = currentDate.toLocaleString('en-GB', {\n    timeZone: 'Europe/Tallinn', // Use the correct timezone for Tallinn, Estonia\n    hour12: false\n});\n\nmsg.payload = {\n    \"Status\": {\n        \"DeviceName\": \"Deye Modbus\", // Required\n        \"FriendlyName\": [\"Home Assitant\"], // Required (first), Optional (others)\n        \"Topic\": \"c4ea0c75-c784-4184-9752-6b772e709d4c\" // Required\n    },\n    \"StatusPRM\": {\n        \"StartupUTC\": \"2024-10-18T06:57:49\", // Required\n        \"BootCount\": 1043 // Required\n    },\n    \"StatusFWR\": {\n        \"Version\": \"QW-MQTT-API-24.10.01\", // Required\n        \"Hardware\": \"ESP32-XXX\" // Required\n    },\n    \"StatusLOG\": {\n        \"TelePeriod\": 10 // Required\n    },\n    \"StatusNET\": {\n        \"Hostname\": \"Home Server\", // Required\n        \"IPAddress\": \"192.168.1.35\", // Required\n        \"Gateway\": \"192.168.1.1\", // Required\n        \"Subnetmask\": \"255.255.255.0\", // Required\n        \"Mac\": \"E8:9F:6D:06:D2:78\" // Required\n    },\n    \"StatusMQT\": {\n        \"MqttHost\": \"test-mqtt.qilowatt.it\", // Required\n        \"MqttPort\": 8883, // Required\n        \"MqttClient\": \"QWAPI_XXXXXX\", // Required\n        \"MqttUser\": \"07ebd0b75956a293aa120a866e917458\", // Required\n    },\n    \"StatusTIM\": {\n        \"UTC\": utcTime, // Use the dynamically generated UTC time\n        \"Local\": localTime, // Use the dynamically generated Local time for Tallinn\n    }\n};\n\n// Return the payload\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 920,
+        "wires": [
+            [
+                "b2f8209026679c1b"
+            ]
+        ],
+        "info": "Description:\n\nThis function node generates the MQTT payload for the Q/c4ea0c75-c784-4184-9752-6b772e709d4c/cmnd/STATUS0 topic. The payload provides detailed system status information including the device identity, firmware version, network configuration, MQTT details, and time-related data. It dynamically formats both UTC and local times based on the current date and time, ensuring accurate time reporting.\n\nKey Functionality:\n\n\t1.\tTime Handling:\n\t•\tUTC Time: The utcTime field is dynamically generated using the JavaScript Date().toISOString() method, which provides the current UTC time in ISO 8601 format.\n\t•\tLocal Time (Tallinn): The localTime field is generated using the toLocaleString() method with the specified timezone for Tallinn ('Europe/Tallinn'). The time is formatted in 24-hour mode (hour12: false), and the locale is set to British English ('en-GB'), ensuring proper time formatting for the specified region.\n\t2.\tDevice Information:\n\t•\tDeviceName: Identifies the device (“Deye Modbus”).\n\t•\tFriendlyName: An array of user-friendly names for the device. The first entry (“My funny device”) is required, while additional entries are optional.\n\t•\tTopic: A unique identifier representing the device’s MQTT topic.\n\t3.\tStartup Information (StatusPRM):\n\t•\tStartupUTC: The startup timestamp (static value for this example: \"2024-10-18T06:57:49\").\n\t•\tBootCount: The number of times the device has restarted (1043 in this example).\n\t4.\tFirmware and Hardware Information (StatusFWR):\n\t•\tVersion: The firmware version running on the device (\"QW-MQTT-API-24.10.01\").\n\t•\tHardware: The hardware model (\"ESP32-XXX\").\n\t5.\tLogging and Telemetry (StatusLOG):\n\t•\tTelePeriod: The telemetry reporting interval in seconds (10 in this example).\n\t6.\tNetwork Configuration (StatusNET):\n\t•\tHostname: The device’s network hostname (\"XXXX\" in this example).\n\t•\tIPAddress: The device’s IP address (\"192.168.1.35\").\n\t•\tGateway: The gateway IP address (\"192.168.1.1\").\n\t•\tSubnetmask: The subnet mask (\"255.255.255.0\").\n\t•\tMac: The device’s MAC address (\"E8:9F:6D:06:D2:78\").\n\t7.\tMQTT Information (StatusMQT):\n\t•\tMqttHost: The hostname of the MQTT broker (\"test-mqtt.qilowatt.it\").\n\t•\tMqttPort: The port used for the MQTT connection (8883).\n\t•\tMqttClient: The MQTT client ID in use (\"QWAPI_XXXXXX\").\n\t•\tMqttUser: The MQTT username (\"07ebd0b75956a293aa120a866e917458\").\n\t8.\tTime Information (StatusTIM):\n\t•\tUTC: The dynamically generated UTC timestamp.\n\t•\tLocal: The dynamically generated local timestamp formatted for the ‘Europe/Tallinn’ timezone.\n\nSummary:\n\n\t•\tComprehensive Device Status: This function assembles a detailed status report covering device identity, firmware, network, MQTT configuration, and current time data, which can be used to monitor the device’s state.\n\t•\tDynamic Time Generation: It generates both UTC and local timestamps in real-time, ensuring accurate time reporting aligned with the device’s timezone.\n\t•\tMQTT Integration: The payload is prepared to be sent to the Qilowatt STATUS0 topic via MQTT to inform the system of the device’s current configuration and operational status.\n\nBy providing detailed status data, this payload allows Qilowatt to maintain up-to-date information about the device’s configuration, network, and telemetry settings, ensuring effective communication and monitoring of the device."
+    },
+    {
+        "id": "b2f8209026679c1b",
+        "type": "mqtt out",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "topic": "Q/c4ea0c75-c784-4184-9752-6b772e709d4c/cmnd/STATUS0",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "0036c37448e3a8e1",
+        "x": 1050,
+        "y": 920,
+        "wires": []
+    },
+    {
+        "id": "739a7d9a660316e6",
+        "type": "inject",
+        "z": "50be82b0b86efe94",
+        "name": "Test payload - Fusebox Sell",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            },
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "POWER2 1; POWER3 1; WORKMODE {\"Mode\":\"sell\",\"_source\":\"fusebox\",\"BatterySoc\":15,\"PowerLimit\":5000,\"PeakShaving\":0,\"ChargeCurrent\":240,\"DischargeCurrent\":200}",
+        "payloadType": "str",
+        "x": 220,
+        "y": 340,
+        "wires": [
+            [
+                "1db7cdacbb013316"
+            ]
+        ]
+    },
+    {
+        "id": "bc3ab114af934613",
+        "type": "inject",
+        "z": "50be82b0b86efe94",
+        "name": "Test payload - Fusebox Buy",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            },
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "POWER2 1; POWER3 1; WORKMODE {\"Mode\":\"buy\",\"_source\":\"fusebox\",\"BatterySoc\":100,\"PowerLimit\":5000,\"PeakShaving\":13800,\"ChargeCurrent\":240,\"DischargeCurrent\":200}",
+        "payloadType": "str",
+        "x": 220,
+        "y": 300,
+        "wires": [
+            [
+                "1db7cdacbb013316"
+            ]
+        ]
+    },
+    {
+        "id": "574100083ee0fe7f",
+        "type": "inject",
+        "z": "50be82b0b86efe94",
+        "name": "Test payload - Timer",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            },
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "WORKMODE {\"Mode\":\"normal\",\"_source\":\"timer\",\"BatterySoc\":15,\"PowerLimit\":10000,\"PeakShaving\":13800,\"ChargeCurrent\":200,\"DischargeCurrent\":240}",
+        "payloadType": "str",
+        "x": 190,
+        "y": 260,
+        "wires": [
+            [
+                "1db7cdacbb013316"
+            ]
+        ]
+    },
+    {
+        "id": "07a0b27b2aed7a7f",
+        "type": "function",
+        "z": "50be82b0b86efe94",
+        "name": "FUSEBOX ",
+        "func": "// Retrieve values from the incoming payload (WORKMODE object)\nvar mode = msg.payload.Mode;\nlet _source = msg.payload._source;\nvar batterySoc = msg.payload.BatterySoc;\nvar powerLimit = msg.payload.PowerLimit;\nvar peakShaving = msg.payload.PeakShaving;\nvar chargeCurrent = msg.payload.ChargeCurrent;\nvar dischargeCurrent = msg.payload.DischargeCurrent;\n\n// Clear the previously stored workmode by resetting it\nflow.set(\"storedWorkmode\", null);  // This will remove the previous workmode data\n\n// Create a new object to store only Mode and _source\nlet filteredWorkmode = {\n    Mode: mode,\n    _source: _source,\n    PowerLimit: powerLimit\n};\n\n// Log the stored WORKMODE for debugging\nnode.warn(\"Storing filtered WORKMODE: \" + JSON.stringify(filteredWorkmode));\n\n// Store the filtered WORKMODE in the flow context\nflow.set(\"storedWorkmode\", filteredWorkmode);  // Store only Mode and _source\n\n// Now prepare the Home Assistant service calls for updating the entities\nlet messages = [];\n\n// Always switch input_select.battery_automation_selector to \"Qilowatt\"\nmessages.push({\n    payload: {\n        domain: \"input_select\",\n        service: \"select_option\",\n        data: {\n            entity_id: \"input_select.battery_automation_selector\",\n            option: \"Qilowatt\"\n        }\n    }\n});\n\n// Update Mode (buy/sell)\nif (mode === \"buy\") {\n    messages.push({\n        payload: {\n            domain: \"input_select\",\n            service: \"select_option\",\n            data: {\n                entity_id: \"input_select.battery_mode_selector\",\n                option: \"Fusebox Buy\"\n            }\n        }\n    });\n} else if (mode === \"sell\") {\n    messages.push({\n        payload: {\n            domain: \"input_select\",\n            service: \"select_option\",\n            data: {\n                entity_id: \"input_select.battery_mode_selector\",\n                option: \"Fusebox Sell\"\n            }\n        }\n    });\n}\n\n// Define desired values based on the mode\nvar desired_prog_charge = mode === \"sell\" ? \"No Grid or Gen\" : \"Allow Grid\";\nvar desired_load_limit = mode === \"sell\" ? \"Allow Export\" : \"Zero Export\";\n\n// List of prog entities to keep in sync (prog1 to prog6)\nvar prog_entities = [\"prog1\", \"prog2\", \"prog3\", \"prog4\", \"prog5\", \"prog6\"];\n\n// Loop over each prog entity to compare current and desired states\nprog_entities.forEach(function (prog) {\n    // Access current states dynamically for each prog\n    var current_prog_capacity = parseFloat(global.get('homeassistant').homeAssistant.states[`number.ss_${prog}_capacity`].state);\n    var current_prog_power = parseFloat(global.get('homeassistant').homeAssistant.states[`number.ss_${prog}_power`].state);\n    var current_prog_charge = global.get('homeassistant').homeAssistant.states[`select.ss_${prog}_charge`].state;\n\n    // Compare and update BatterySoc (capacity)\n    if (current_prog_capacity !== batterySoc) {\n        messages.push({\n            payload: {\n                domain: \"number\",\n                service: \"set_value\",\n                data: {\n                    entity_id: `number.ss_${prog}_capacity`,\n                    value: batterySoc\n                }\n            }\n        });\n    }\n\n    // Compare and update PowerLimit (prog power)\n    if (current_prog_power !== powerLimit) {\n        messages.push({\n            payload: {\n                domain: \"number\",\n                service: \"set_value\",\n                data: {\n                    entity_id: `number.ss_${prog}_power`,\n                    value: powerLimit\n                }\n            }\n        });\n    }\n\n    // Compare and update Charge mode based on buy/sell\n    if (current_prog_charge !== desired_prog_charge) {\n        messages.push({\n            payload: {\n                domain: \"select\",\n                service: \"select_option\",\n                data: {\n                    entity_id: `select.ss_${prog}_charge`,\n                    option: desired_prog_charge\n                }\n            }\n        });\n    }\n});\n\n// Check and update non-prog-specific entities\nvar current_charge_current = parseFloat(global.get('homeassistant').homeAssistant.states[\"number.ss_battery_max_charge_current\"].state);\nvar current_discharge_current = parseFloat(global.get('homeassistant').homeAssistant.states[\"number.ss_battery_max_discharge_current\"].state);\nvar current_peak_shaving_status = global.get('homeassistant').homeAssistant.states[\"select.ss_grid_peak_shaving\"].state;\nvar current_load_limit = global.get('homeassistant').homeAssistant.states[\"select.ss_load_limit\"].state;\nvar batteryVoltage = parseFloat(global.get('homeassistant').homeAssistant.states[\"sensor.ss_battery_voltage\"]?.state) || 55.2;\n\n// Calculate ChargeCurrent based on powerLimit\nvar calculatedChargeCurrent = Math.min(Math.ceil(Math.abs(powerLimit) / batteryVoltage));\n\n// Compare and update ChargeCurrent\nif (current_charge_current !== calculatedChargeCurrent) {\n    messages.push({\n        payload: {\n            domain: \"number\",\n            service: \"set_value\",\n            data: {\n                entity_id: \"number.ss_battery_max_charge_current\",\n                value: calculatedChargeCurrent\n            }\n        }\n    });\n}\n\n// Compare and update DischargeCurrent\nif (current_discharge_current !== dischargeCurrent) {\n    messages.push({\n        payload: {\n            domain: \"number\",\n            service: \"set_value\",\n            data: {\n                entity_id: \"number.ss_battery_max_discharge_current\",\n                value: dischargeCurrent\n            }\n        }\n    });\n}\n\n// Compare and update PeakShaving\nif (peakShaving > 0 && current_peak_shaving_status !== \"Enable\") {\n    messages.push({\n        payload: {\n            domain: \"select\",\n            service: \"select_option\",\n            data: {\n                entity_id: \"select.ss_grid_peak_shaving\",\n                option: \"Enable\"\n            }\n        }\n    });\n} else if (peakShaving === 0 && current_peak_shaving_status !== \"Disable\") {\n    messages.push({\n        payload: {\n            domain: \"select\",\n            service: \"select_option\",\n            data: {\n                entity_id: \"select.ss_grid_peak_shaving\",\n                option: \"Disable\"\n            }\n        }\n    });\n}\n\n// Compare and update Load Limit based on mode\nif (current_load_limit !== desired_load_limit) {\n    messages.push({\n        payload: {\n            domain: \"select\",\n            service: \"select_option\",\n            data: {\n                entity_id: \"select.ss_load_limit\",\n                option: desired_load_limit\n            }\n        }\n    });\n}\n\n// Send all payloads if there are changes\nif (messages.length > 0) {\n    return [messages];\n}\n\n// No return if no updates are necessary\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1430,
+        "y": 500,
+        "wires": [
+            [
+                "6dd7754c920f30f2"
+            ]
+        ],
+        "info": "Description:\n\nThis function node handles the Fusebox commands received via the Qilowatt MQTT topic (Q/c4ea0c75-c784-4184-9752-6b772e709d4c/cmnd/backlog). Fusebox commands (mode=fusebox) are related to signals from the MFFR (manual frequency restoration reserve) market. The goal is to adjust Home Assistant battery automation and system parameters to align with these signals while ensuring the battery operates in the correct mode (buy/sell) based on the incoming payload.\n\nFunction Purpose:\n\n\t1.\tStore and Clear the Previous WORKMODE:\n\t•\tThe function clears any previously stored WORKMODE data by resetting it in the flow context. It then stores the current WORKMODE payload in the flow context, keeping only the Mode and _source properties for later use.\n\t2.\tSwitch Automation to “Qilowatt”:\n\t•\tRegardless of the mode (buy or sell), the function switches the input_select.battery_automation_selector in Home Assistant to “Qilowatt.” This ensures that the system is being controlled by Qilowatt for the duration of the Fusebox mode commands.\n\t3.\tHandle Buy/Sell Mode:\n\t•\tIf the mode is “buy,” the function sets the input_select.battery_mode_selector to “Fusebox Buy.”\n\t•\tIf the mode is “sell,” it sets the mode to “Fusebox Sell.”\n\t4.\tUpdate Battery Control Parameters:\n\t•\tBased on the mode (“buy” or “sell”), the function adjusts several key battery control parameters, including the BatterySOC (capacity), PowerLimit (prog power), and Charge Mode for different program entities (prog1 to prog6). The parameters are compared against the current values in Home Assistant, and if there are differences, service calls are made to update them.\n\t5.\tCalculate and Set Charge/Discharge Current:\n\t•\tThe function calculates the ChargeCurrent based on the PowerLimit using a formula (Math.min(Math.ceil(Math.abs(powerLimit) / 55.2))). This ensures the charge current is proportional to the power limit set by the Fusebox commands.\n\t•\tIt also sets the DischargeCurrent if it differs from the current value in Home Assistant.\n\t6.\tAdjust Peak Shaving and Load Limits:\n\t•\tThe function updates the PeakShaving mode and Load Limit based on the incoming Fusebox mode command (buy or sell). If the peak shaving is enabled, it switches to “Enable,” and if it’s zero, it switches to “Disable.”\n\t•\tSimilarly, it adjusts the load limit, enabling export for the “sell” mode and disabling it for the “buy” mode.\n\nSummary of Actions:\n\n\t•\tMode = Buy:\n\t•\tSwitches battery mode to “Fusebox Buy”\n\t•\tUpdates battery capacity, power limit, charge mode, charge/discharge currents, peak shaving, and load limits.\n\t•\tMode = Sell:\n\t•\tSwitches battery mode to “Fusebox Sell”\n\t•\tSimilarly updates the battery parameters and system limits.\n\nThe purpose of this function is to ensure that, when a Fusebox command is received, the Home Assistant environment is appropriately adjusted to align with the instructions from Qilowatt, ensuring correct behavior for grid interaction and MFFR market participation. If no updates are required, the function returns null to prevent unnecessary actions."
+    },
+    {
+        "id": "6dd7754c920f30f2",
+        "type": "api-call-service",
+        "z": "50be82b0b86efe94",
+        "name": "To HA",
+        "server": "85d8301ca60baff3",
+        "version": 5,
+        "debugenabled": true,
+        "domain": "{{payload.domain}}",
+        "service": "{{payload.service}}",
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [],
+        "data": "{}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "queue": "none",
+        "x": 1670,
+        "y": 480,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3cedf9e0595aeee4",
+        "type": "comment",
+        "z": "50be82b0b86efe94",
+        "name": "Flow to write /SENSOR to QW",
+        "info": "",
+        "x": 200,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "2fec21efd1316257",
+        "type": "comment",
+        "z": "50be82b0b86efe94",
+        "name": "Flow to write /STATE to QW",
+        "info": "",
+        "x": 200,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "7d6d5dc3916f4864",
+        "type": "comment",
+        "z": "50be82b0b86efe94",
+        "name": "Flow to write /cmnd/STATUS0 to QW",
+        "info": "",
+        "x": 230,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "eceaeb313c403d01",
+        "type": "comment",
+        "z": "50be82b0b86efe94",
+        "name": "Flow to listen cmnd/backlog from QW",
+        "info": "",
+        "x": 250,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "99cfa309ab361944",
+        "type": "file",
+        "z": "50be82b0b86efe94",
+        "name": "Log cmnd/backlog to file",
+        "filename": "/data/qilowatt_mqtt_payloads.txt",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 1190,
+        "y": 560,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2612e13ca2a0b6bc",
+        "type": "function",
+        "z": "50be82b0b86efe94",
+        "name": "Add Time Stamp",
+        "func": "// Get the current timestamp in ISO format (UTC)\nlet utcTimestamp = new Date().toISOString();\n\n// Get the current local time for Tallinn/Estonia\nlet localTime = new Date().toLocaleString('en-GB', {\n    timeZone: 'Europe/Tallinn', // Use the correct timezone for Tallinn\n    hour12: false // Use 24-hour format\n});\n\n// Append both timestamps (UTC and local) to the original payload\nmsg.payload = `${utcTimestamp} (UTC) - ${localTime} (Local) - ${msg.payload}\\n`;\n\n// Return the modified message to be written to the file\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 560,
+        "wires": [
+            [
+                "99cfa309ab361944"
+            ]
+        ]
+    },
+    {
+        "id": "a5cd61d901bfcb60",
+        "type": "server-state-changed",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "server": "85d8301ca60baff3",
+        "version": 5,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entityId": "sensor.ss_battery_voltage",
+        "entityIdType": "exact",
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            },
+            {
+                "property": "originalPayload",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entityState"
+            }
+        ],
+        "x": 240,
+        "y": 1140,
+        "wires": [
+            [
+                "ef3549d92e0e65ce"
+            ]
+        ]
+    },
+    {
+        "id": "ef3549d92e0e65ce",
+        "type": "api-current-state",
+        "z": "50be82b0b86efe94",
+        "name": "",
+        "server": "85d8301ca60baff3",
+        "version": 3,
+        "outputs": 2,
+        "halt_if": "Fusebox Buy",
+        "halt_if_type": "str",
+        "halt_if_compare": "is",
+        "entity_id": "input_select.battery_mode_selector",
+        "state_type": "str",
+        "blockInputOverrides": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entity"
+            }
+        ],
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "override_topic": false,
+        "state_location": "payload",
+        "override_payload": "msg",
+        "entity_location": "data",
+        "override_data": "msg",
+        "x": 710,
+        "y": 1140,
+        "wires": [
+            [
+                "308d3617a08ea436"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "308d3617a08ea436",
+        "type": "function",
+        "z": "50be82b0b86efe94",
+        "name": "Update Charge Current",
+        "func": "// Retrieve the stored WORKMODE from flow context\nlet storedWorkmode = flow.get(\"storedWorkmode\") || {};\n\n// Use the stored powerLimit from storedWorkmode\nvar powerLimit = parseInt(storedWorkmode.PowerLimit);\n\n// Retrieve the current battery voltage from Home Assistant or use default value 55.2 if unavailable\nvar batteryVoltage = parseFloat(global.get('homeassistant').homeAssistant.states[\"sensor.ss_battery_voltage\"]?.state) || 55.2;\n\n// Retrieve the current charge current from Home Assistant\nvar current_charge_current = parseFloat(global.get('homeassistant').homeAssistant.states[\"number.ss_battery_max_charge_current\"]?.state);\n\n// Initialize an empty array to hold the service call messages\nlet messages = [];\n\n// Calculate ChargeCurrent based on the real battery voltage or default value\nvar calculatedChargeCurrent = Math.min(Math.ceil(Math.abs(powerLimit) / batteryVoltage));\n\n// Compare and update ChargeCurrent if needed\nif (current_charge_current !== calculatedChargeCurrent) {\n    messages.push({\n        payload: {\n            domain: \"number\",\n            service: \"set_value\",\n            data: {\n                entity_id: \"number.ss_battery_max_charge_current\",\n                value: calculatedChargeCurrent\n            }\n        }\n    });\n}\n\n// Return the messages array if there are updates to make, or return null if no changes are necessary\nif (messages.length > 0) {\n    return [messages];\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1170,
+        "y": 1140,
+        "wires": [
+            [
+                "6dd7754c920f30f2"
+            ]
+        ]
+    },
+    {
+        "id": "d758b0e78d53b771",
+        "type": "ping",
+        "z": "50be82b0b86efe94",
+        "protocol": "Automatic",
+        "mode": "timed",
+        "name": "",
+        "host": "8.8.8.8",
+        "timer": "900",
+        "inputs": 0,
+        "x": 130,
+        "y": 1020,
+        "wires": [
+            [
+                "2ddfce0d412606e7"
+            ]
+        ]
+    },
+    {
+        "id": "2ddfce0d412606e7",
+        "type": "function",
+        "z": "50be82b0b86efe94",
+        "name": "ping to payload",
+        "func": "// Retrieve the stored pingData from flow context or initialize it if it doesn't exist\nlet pingData = flow.get(\"pingData\") || {\n    lastPings: [],\n    Success: 0,\n    Timeout: 0,\n    MinTime: null,\n    MaxTime: null,\n    TotalTime: 0,\n    AvgTime: 0,\n    Reachable: true\n};\n\n// Get the incoming ping result and round the time to full numbers\nlet pingResult = {\n    time: Math.round(msg.payload), // Rounding to full numbers\n    success: msg.payload !== null && msg.payload > 0 // If the ping time is not null and greater than 0, it's a success\n};\n\n// Add the new ping result to the lastPings array\npingData.lastPings.push(pingResult);\n\n// Trim the array to keep only the last 4 entries\nif (pingData.lastPings.length > 4) {\n    pingData.lastPings.shift();\n}\n\n// Reset Success, Timeout, MinTime, MaxTime, and TotalTime counters\npingData.Success = 0;\npingData.Timeout = 0;\npingData.TotalTime = 0;\npingData.MinTime = null; // Reset to null so we can calculate from scratch\npingData.MaxTime = null;\n\n// Process the last 4 pings\npingData.lastPings.forEach(ping => {\n    if (ping.success) {\n        pingData.Success += 1;\n        pingData.TotalTime += ping.time; // Accumulate the total time\n\n        // Update MinTime and MaxTime\n        if (pingData.MinTime === null || ping.time < pingData.MinTime) {\n            pingData.MinTime = ping.time;\n        }\n        if (pingData.MaxTime === null || ping.time > pingData.MaxTime) {\n            pingData.MaxTime = ping.time;\n        }\n    } else {\n        pingData.Timeout += 1;\n    }\n});\n\n// Calculate AvgTime\nif (pingData.Success > 0) {\n    pingData.AvgTime = Math.round(pingData.TotalTime / pingData.Success); // Round AvgTime to full numbers\n} else {\n    pingData.AvgTime = 0; // If no successes, AvgTime is 0\n}\n\n// Save the updated pingData back to flow context\nflow.set(\"pingData\", pingData);\n\n// Return the updated pingData in the message payload\nmsg.payload = pingData;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 1020,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "dce6c2361c6ee879",
+        "type": "comment",
+        "z": "50be82b0b86efe94",
+        "name": "Ping every 15 minutes and save for payload",
+        "info": "",
+        "x": 250,
+        "y": 980,
+        "wires": []
+    },
+    {
+        "id": "40546c1cf655a8a7",
+        "type": "comment",
+        "z": "50be82b0b86efe94",
+        "name": "When in Fusebox mode update charge current on Battery Voltage change",
+        "info": "",
+        "x": 340,
+        "y": 1080,
+        "wires": []
+    },
+    {
+        "id": "0036c37448e3a8e1",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "test-mqtt.qilowatt.it",
+        "port": "8883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "85d8301ca60baff3",
+        "type": "server",
+        "name": "Home Assistant",
+        "version": 5,
+        "addon": false,
+        "rejectUnauthorizedCerts": false,
+        "ha_boolean": "y|yes|true|on|home|open",
+        "connectionDelay": true,
+        "cacheJson": true,
+        "heartbeat": false,
+        "heartbeatInterval": "30",
+        "areaSelector": "friendlyName",
+        "deviceSelector": "friendlyName",
+        "entitySelector": "friendlyName",
+        "statusSeparator": ": ",
+        "statusYear": "hidden",
+        "statusMonth": "short",
+        "statusDay": "numeric",
+        "statusHourCycle": "default",
+        "statusTimeFormat": "h:m",
+        "enableGlobalContextStore": true
+    }
+]
