@@ -133,7 +133,7 @@ This flow dynamically adjusts the battery charge current based on real-time volt
     "DischargeCurrent": 185
   }
 }
-
+```
 | **Field**             | **Type**   | **Description**                                                      | **Example**                      | **Optional/Required** |
 |-----------------------|------------|----------------------------------------------------------------------|----------------------------------|------------------------|
 | **PING**                  | -          | Contains the results of a ping test                                  |                                  | Optional               |
@@ -195,6 +195,7 @@ This flow dynamically adjusts the battery charge current based on real-time volt
   "POWER2": "OFF",
   "POWER3": "OFF"
 }
+```
 | **Field**             | **Type**   | **Description**                                                      | **Example**                      | **Optional/Required** |
 |-----------------------|------------|----------------------------------------------------------------------|----------------------------------|------------------------|
 | Time                  | String     | Timestamp when the report was generated                               | "2024-10-17T10:59:57"            | Required               |
@@ -227,6 +228,7 @@ This flow dynamically adjusts the battery charge current based on real-time volt
     }
   }
 }
+```
 
 | **Field**             | **Type**   | **Description**                                                      | **Example**                      | **Optional/Required** |
 |-----------------------|------------|----------------------------------------------------------------------|----------------------------------|------------------------|
@@ -281,6 +283,7 @@ This flow dynamically adjusts the battery charge current based on real-time volt
     "Local": "25/10/2024, 14:28:52"
   }
 }
+```
 
 | **Field**             | **Type**   | **Description**                                                      | **Example**                      | **Optional/Required** |
 |-----------------------|------------|----------------------------------------------------------------------|----------------------------------|------------------------|
