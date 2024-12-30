@@ -183,7 +183,7 @@
         "type": "function",
         "z": "50be82b0b86efe94",
         "name": "TIMER",
-        "func": "// Store the entire WORKMODE payload in the flow context\nflow.set(\"storedWorkmode\", msg.payload);\n\n// Get the state of the input_select.battery_automation_selector entity\nlet currentBatterySelector = global.get(\"homeassistant\").homeAssistant.states[\"input_select.battery_automation_selector\"].state;\n\n// Check if it's not \"EMHASS\", and if so, change it to \"EMHASS\"\nif (currentBatterySelector !== \"EMHASS\") {\n    \n    // Send a service call to switch the input_select to EMHASS\n    return {\n        payload: {\n            domain: \"input_select\",\n            service: \"select_option\",\n            data: {\n                entity_id: \"input_select.battery_automation_selector\",\n                option: \"EMHASS\"\n            }\n        }    \n    };\n}\n\n// Optionally return the message to pass further\nreturn null;",
+        "func": "// Store the entire WORKMODE payload in the flow context\nflow.set(\"storedWorkmode\", msg.payload);\n\n// Always send a service call to switch the input_select to EMHASS\nreturn {\n    payload: {\n        domain: \"input_select\",\n        service: \"select_option\",\n        data: {\n            entity_id: \"input_select.battery_automation_selector\",\n            option: \"EMHASS\"\n        }\n    }\n};",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
